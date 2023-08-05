@@ -1,4 +1,8 @@
-from multiprocessing import Queue
+import multiprocessing
+import threading
+from enum import Enum, auto
+from typing import Union
+from time import sleep
 
 from rpi_ws281x import *
 
@@ -16,8 +20,6 @@ import neopixel
 import neopixel_spi
 
 NUM_PIXELS = 24
-SERVO_FLAT_ANGLE = 40
-SERVO_DROP_ANGLE = 130
 
 print(dir(board))
 # pixels = neopixel.NeoPixel(board.D12, NUM_PIXELS, brightness=0.1, auto_write=False, pixel_order=neopixel.GRB)
@@ -29,30 +31,69 @@ pulse_black = Pulse(pixels, speed=0.1, color=BLACK, period=0.1)
 solid_green = Solid(pixels, color=GREEN)
 solid_black = Solid(pixels, color=BLACK)
 solid_white = Solid(pixels, color=WHITE)
-pulse_red = Pulse(pixels, speed=0.005, color=RED, period=0.2)
+pulse_red = Pulse(pixels, speed=0.005, color=RED, period=0.5)
 pulse_yellow = Pulse(pixels, speed=0.01, color=YELLOW, period=1)
 pulse_white = Pulse(pixels, speed=0.05, color=WHITE, period=1)
 pulse_green = Pulse(pixels, speed=0.05, color=GREEN, period=1.5)
 
 idle_animation = AnimationSequence(pulse_white, pulse_black, advance_interval=1, auto_clear=True)
 waiting_animation = comet_white
+
 star_animation = ColorCycle(pixels, 0.3, colors=[ORANGE, YELLOW, WHITE])
 coin_animation = pulse_yellow
 pipe_animation = pulse_green
-
 jump_animation = solid_white
 fireball_animation = pulse_red
 
-current_color_animation = pulse_white
+class LIGHT_ANIMATION(Enum):
+    JUMP = auto()
+    FIRE_BALL = auto()
+    PIPE = auto()
+
+LIGHT_ANIMATION_MAP = {
+    LIGHT_ANIMATION.JUMP: lambda : AnimateOnce(pulse_white),
+    LIGHT_ANIMATION.FIRE_BALL: lambda : AnimateOnce(fireball_animation),
+    LIGHT_ANIMATION.PIPE: lambda : AnimateOnce(pipe_animation)
+}
+
+def empty_queue(q):
+    while not q.empty():
+        q.get()
+
+def animation_loop(q: multiprocessing.Queue, logger):
+
+    current_light_animation = None
+
+    while True:
+
+        if current_light_animation is None:
+
+            try:
+                next_light_animation: Union[None, LIGHT_ANIMATION] = q.get_nowait()
+                empty_queue(q)
+            except:
+                next_light_animation = None
+
+            if next_light_animation is not None:
+                current_light_animation = LIGHT_ANIMATION_MAP[next_light_animation]()
+                current_light_animation.reset()
+
+        if current_light_animation is not None:
+            if not current_light_animation.animate():
+                current_light_animation = None
+
 
 class Lights:
     
-    current_color_animation = None
+    current_light_animation = None
 
-    def __init__(self, message_q: Queue):
-        self.message_q = message_q
+    def __init__(self, logger):
+        self.message_q = multiprocessing.Queue()
 
-    def animate(self):
-        if self.current_color_animation is not None:
-          if not current_color_animation.animate():
-            current_color_animation = None
+        # create and start the light animation process
+        lights_listener_process = multiprocessing.Process(target=animation_loop, args=(self.message_q, logger))
+        lights_listener_process.start()
+
+    def run_animation(self, animation: LIGHT_ANIMATION):
+
+        self.message_q.put(animation)

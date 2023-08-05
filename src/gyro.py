@@ -1,4 +1,4 @@
-from multiprocessing import Queue
+import multiprocessing
 from time import sleep
 
 import smbus
@@ -107,5 +107,5 @@ def test_gyro():
 
 class Gyro:
     
-    def __init__(self, message_q: Queue):
-        self.message_q = message_q
+    def __init__(self):
+        self.message_q = multiprocessing.Queue()
