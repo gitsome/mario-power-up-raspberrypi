@@ -1,3 +1,8 @@
+import time
+from time import sleep
+import multiprocessing
+from enum import Enum
+
 from hx711 import HX711
 
 hx = HX711(dout_pin=6, pd_sck_pin=5)
@@ -15,29 +20,38 @@ calibration_ratio = 690.35
 
 hx.set_scale_ratio(calibration_ratio)
 
-def sensor_weight():
+class WEIGHT_THRESHOLD(Enum):
+    LIGHT = 10
+    MEDIUM = 30
+    HEAVY = 80
 
-  global hx
+def weight_loop(message_q, logger):
 
-  while True:
+    global hx
+    global did_detect_weight
 
-    reading = hx.get_weight_mean()
+    while True:
+
+        weight = hx.get_weight_mean()
+
+        if (weight > WEIGHT_THRESHOLD.HEAVY.value):
+            # star
+            message_q.put(WEIGHT_THRESHOLD.HEAVY)
+        elif (weight > WEIGHT_THRESHOLD.MEDIUM.value):
+            # just what i needed with power up
+            message_q.put(WEIGHT_THRESHOLD.MEDIUM)
+        elif (weight > WEIGHT_THRESHOLD.LIGHT.value):
+            # yeahoo, coin
+            message_q.put(WEIGHT_THRESHOLD.LIGHT)
+
+class Scale:
+    
+    message_q: multiprocessing.Queue
+
+    def __init__ (self, queue, logger):
       
-    if (reading > 80):
-      play_mario_star()
-      servo_kit.servo[0].angle = SERVO_DROP_ANGLE
-    elif (reading > 30):
-      play_mario_just_what_i_needed()
-      time.sleep(1.25)
-      play_mario_power_up()
-      servo_kit.servo[0].angle = SERVO_DROP_ANGLE
-    elif (reading > 10):
-      play_mario_yeahoo()
-      time.sleep(0.75)
-      play_mario_coin()
-      servo_kit.servo[0].angle = SERVO_DROP_ANGLE
-    else:
-       servo_kit.servo[0].angle = SERVO_FLAT_ANGLE
+        self.message_q = queue
 
-weight_thread = threading.Thread(target=sensor_weight, args=()) 
-weight_thread.start()
+        # create and start the scale listener
+        scale_listener_process = multiprocessing.Process(target=weight_loop, args=(self.message_q, logger))
+        scale_listener_process.start()

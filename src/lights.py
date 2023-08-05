@@ -60,6 +60,7 @@ class LIGHT_ANIMATION(Enum):
     PIPE = auto()
     MARIO_COIN = auto()
     ADMIN = auto()
+    WEIGHT_DETECTED = auto()
 
 LIGHT_ANIMATION_MAP = {
     LIGHT_ANIMATION.JUMP: lambda : AnimationConfig(AnimateOnce(pulse_white)),
@@ -67,6 +68,7 @@ LIGHT_ANIMATION_MAP = {
     LIGHT_ANIMATION.PIPE: lambda : AnimationConfig(AnimateOnce(pipe_animation)),
     LIGHT_ANIMATION.MARIO_COIN: lambda: AnimationConfig(AnimateOnce(coin_animation)),
     LIGHT_ANIMATION.ADMIN: lambda: AnimationConfig(Pulse(pixels, speed=0.01, color=TEAL, period=0.6),  True),
+    LIGHT_ANIMATION.WEIGHT_DETECTED: lambda: AnimationConfig(Comet(pixels, speed=0.02, color=WHITE, tail_length=6, bounce=False, ring=True), True)
 }
 
 

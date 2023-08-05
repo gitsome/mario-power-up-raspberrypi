@@ -14,6 +14,7 @@ from gyro import Gyro
 from gamepad import Gamepad, GamePadButton, ButtonPress
 from sounds import Sounds, SoundEffect
 from servo import Servo
+from scale import Scale, WEIGHT_THRESHOLD
 from utils import empty_queue, reboot
 
 # ============================= LOGGING ======================================
@@ -45,6 +46,7 @@ class Action(Enum):
     PIPE = auto()
     FIRE_BALL = auto()
     DUMP_CANDY = auto()
+    WEIGHT_DETECTED = auto()
 
     GO_ADMIN = auto()
     GO_TRICK_OR_TREAT_LOADED = auto()
@@ -81,6 +83,10 @@ gyro = Gyro(logger=logger, queue = gyro_q)
 
 gamepad_q = Queue()
 gamepad = Gamepad(logger=logger, queue = gamepad_q)
+
+scale_q = Queue()
+scale = Scale(logger=logger, queue = scale_q)
+
 
 # ============= MODE AND ACTION LOGIC ===================
 
@@ -131,6 +137,8 @@ mode = Mode.TRICK_OR_TREAT
 # actions lock everything else from happening
 current_action: Union[None, Action] = Action.START_UP
 
+isWeighing = False
+
 while True:
 
     # ========== GET GAMEPAD INPUT ===========
@@ -151,10 +159,24 @@ while True:
     except:
         pass
 
+    # ========== GET WEIGHT INPUT ============
+
+    current_weight: Union[WEIGHT_THRESHOLD, None] = None
+
+    try:
+        current_weight: WEIGHT_THRESHOLD = scale_q.get_nowait()
+        empty_queue(scale_q)
+    except:
+        pass
+    
 
     # ========== GET ACTIONS BASED ON MODE ONLY IF ONE IS NOT ALREADY SET ============
 
     if current_action is None:
+
+        if not isWeighing and current_weight is not None:
+            isWeighing = True
+            current_action = Action.WEIGHT_DETECTED
 
         if did_jump:
             current_action = Action.JUMP
@@ -194,6 +216,10 @@ while True:
             sounds.play_sound(SoundEffect.MARIO_COIN)
             sleep(1)
             servo.drop_shelf()
+
+        if current_action == Action.WEIGHT_DETECTED:
+            lights.run_animation(LIGHT_ANIMATION.WEIGHT_DETECTED)  
+            sleep(1)
 
         if current_action == Action.GO_ADMIN:
             lights.run_animation(LIGHT_ANIMATION.ADMIN)
