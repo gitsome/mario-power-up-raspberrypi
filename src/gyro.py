@@ -1,5 +1,7 @@
 import multiprocessing
+from typing import Union
 from time import sleep
+import time
 
 import smbus
 '''
@@ -82,17 +84,34 @@ def get_gyro_data():
 
 did_jump = False
 
+accel_start_time: Union[None, int] = None
+time_since_last_jump = time.time()
+
 def gyro_loop(message_q, logger):
 
     global did_jump
+    global time_since_last_jump
 
     while True:
 
         acceleration_z = get_gyro_data()
 
-        did_jump = acceleration_z > 1.3
+        is_strong_accel = acceleration_z > 1.2
+
+        if is_strong_accel and time.time() - time_since_last_jump > 1.5:
+          
+          if accel_start_time is not None and (time.time() - accel_start_time) > 0.05:
+            did_jump = True
+          elif accel_start_time is None:
+            accel_start_time = time.time()
+
+        else:
+            accel_start_time = None
+            did_jump = False
 
         if did_jump:
+            did_jump = False
+            time_since_last_jump = time.time()
             message_q.put(True)
             sleep(1.5)
 

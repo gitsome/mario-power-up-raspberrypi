@@ -55,20 +55,28 @@ class AnimationConfig():
 
 
 class LIGHT_ANIMATION(Enum):
+    CLEAR = auto()
     JUMP = auto()
     FIRE_BALL = auto()
     PIPE = auto()
     MARIO_COIN = auto()
     ADMIN = auto()
     WEIGHT_DETECTED = auto()
+    STAR_POWER = auto()
+    FREE_GUY = auto()
+    POWER_UP = auto()
 
 LIGHT_ANIMATION_MAP = {
+    LIGHT_ANIMATION.CLEAR: lambda : AnimationConfig(AnimateOnce(solid_black)),
     LIGHT_ANIMATION.JUMP: lambda : AnimationConfig(AnimateOnce(pulse_white)),
     LIGHT_ANIMATION.FIRE_BALL: lambda : AnimationConfig(AnimateOnce(fireball_animation)),
     LIGHT_ANIMATION.PIPE: lambda : AnimationConfig(AnimateOnce(pipe_animation)),
     LIGHT_ANIMATION.MARIO_COIN: lambda: AnimationConfig(AnimateOnce(coin_animation)),
     LIGHT_ANIMATION.ADMIN: lambda: AnimationConfig(Pulse(pixels, speed=0.01, color=TEAL, period=0.6),  True),
-    LIGHT_ANIMATION.WEIGHT_DETECTED: lambda: AnimationConfig(Comet(pixels, speed=0.02, color=WHITE, tail_length=6, bounce=False, ring=True), True)
+    LIGHT_ANIMATION.WEIGHT_DETECTED: lambda: AnimationConfig(Comet(pixels, speed=0.02, color=WHITE, tail_length=6, bounce=False, ring=True), True),
+    LIGHT_ANIMATION.STAR_POWER: lambda: AnimationConfig(ColorCycle(pixels, 0.3, colors=[ORANGE, YELLOW, WHITE]), True),
+    LIGHT_ANIMATION.FREE_GUY: lambda: AnimationConfig(AnimateOnce(Pulse(pixels, speed=0.01, color=TEAL, period=0.6))),
+    LIGHT_ANIMATION.POWER_UP: lambda: AnimationConfig(AnimateOnce(Pulse(pixels, speed=0.01, color=RED, period=0.75)))
 }
 
 

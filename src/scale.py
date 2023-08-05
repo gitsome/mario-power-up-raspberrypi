@@ -2,6 +2,7 @@ import time
 from time import sleep
 import multiprocessing
 from enum import Enum
+from utils import empty_queue
 
 from hx711 import HX711
 
@@ -21,9 +22,16 @@ calibration_ratio = 690.35
 hx.set_scale_ratio(calibration_ratio)
 
 class WEIGHT_THRESHOLD(Enum):
+    NONE = 0
     LIGHT = 10
     MEDIUM = 30
     HEAVY = 80
+
+SCALE_LOADED_WEIGHTS = [
+    WEIGHT_THRESHOLD.LIGHT,
+    WEIGHT_THRESHOLD.MEDIUM,
+    WEIGHT_THRESHOLD.HEAVY
+]
 
 def weight_loop(message_q, logger):
 
@@ -32,7 +40,10 @@ def weight_loop(message_q, logger):
 
     while True:
 
-        weight = hx.get_weight_mean()
+        weight = hx.get_weight_mean(readings=10)
+
+        # make sure only the latest is in the q
+        empty_queue(message_q)
 
         if (weight > WEIGHT_THRESHOLD.HEAVY.value):
             # star
@@ -43,6 +54,9 @@ def weight_loop(message_q, logger):
         elif (weight > WEIGHT_THRESHOLD.LIGHT.value):
             # yeahoo, coin
             message_q.put(WEIGHT_THRESHOLD.LIGHT)
+        else:
+            message_q.put(WEIGHT_THRESHOLD.NONE)
+        
 
 class Scale:
     

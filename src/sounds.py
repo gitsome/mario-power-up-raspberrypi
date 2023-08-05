@@ -11,7 +11,7 @@ class SoundConfig:
         self.volume = volume
 
 class SoundEffect(Enum):
-    STAR_POWER = SoundConfig("star_power.mp3", 6)
+    STAR_POWER = SoundConfig("star_power.mp3", 20)
     MARIO_DIE = SoundConfig("mario_die.mp3", 6)
     MARIO_JUMP = SoundConfig("mario_jump.mp3", 2)
     FIRE_BALL = SoundConfig("fireball.mp3", 2)

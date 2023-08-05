@@ -1,6 +1,7 @@
 #!/user/bin/env python
 from typing import Union
 from enum import Enum, auto
+import time
 from time import sleep
 import logging
 import board
@@ -14,7 +15,7 @@ from gyro import Gyro
 from gamepad import Gamepad, GamePadButton, ButtonPress
 from sounds import Sounds, SoundEffect
 from servo import Servo
-from scale import Scale, WEIGHT_THRESHOLD
+from scale import Scale, WEIGHT_THRESHOLD, SCALE_LOADED_WEIGHTS
 from utils import empty_queue, reboot
 
 # ============================= LOGGING ======================================
@@ -35,6 +36,7 @@ class Mode(Enum):
 class Action(Enum):
     
     START_UP = auto()
+    CLEAR = auto()
 
     # MODE SWITCHING ACTIONS
 
@@ -45,8 +47,10 @@ class Action(Enum):
     JUMP = auto()
     PIPE = auto()
     FIRE_BALL = auto()
-    DUMP_CANDY = auto()
     WEIGHT_DETECTED = auto()
+    DUMP_CANDY_LIGHT = auto()
+    DUMP_CANDY_MEDIUM = auto()
+    DUMP_CANDY_HEAVY = auto()
 
     GO_ADMIN = auto()
     GO_TRICK_OR_TREAT_LOADED = auto()
@@ -99,7 +103,7 @@ def check_for_trick_or_treat_actions(buttonPress: ButtonPress) -> Union[Action, 
     elif buttonPress.button == GamePadButton.DOWN:
         return Action.PIPE
     elif buttonPress.button == GamePadButton.START:
-        return Action.DUMP_CANDY
+        return Action.DUMP_CANDY_LIGHT
     elif buttonPress.button == GamePadButton.SELECT:
         return Action.GO_ADMIN
     
@@ -137,7 +141,11 @@ mode = Mode.TRICK_OR_TREAT
 # actions lock everything else from happening
 current_action: Union[None, Action] = Action.START_UP
 
-isWeighing = False
+weigh_start_time:int = 0
+weigh_start_threshold: WEIGHT_THRESHOLD = WEIGHT_THRESHOLD.NONE
+dump_candy_start_time:int = 0
+
+current_weight: Union[WEIGHT_THRESHOLD, None] = None
 
 while True:
 
@@ -161,11 +169,9 @@ while True:
 
     # ========== GET WEIGHT INPUT ============
 
-    current_weight: Union[WEIGHT_THRESHOLD, None] = None
-
     try:
-        current_weight: WEIGHT_THRESHOLD = scale_q.get_nowait()
-        empty_queue(scale_q)
+        next_weight = scale_q.get_nowait()
+        current_weight = current_weight if next_weight is None else next_weight
     except:
         pass
     
@@ -174,11 +180,34 @@ while True:
 
     if current_action is None:
 
-        if not isWeighing and current_weight is not None:
-            isWeighing = True
-            current_action = Action.WEIGHT_DETECTED
+        if current_weight in SCALE_LOADED_WEIGHTS and not mode == Mode.TRICK_OR_TREAT_LOADED:
+            # give the scale some time to reset after dumping because it will likely read weird while the servo motor is moving
+            if (time.time() - dump_candy_start_time) > 6:
+                mode = Mode.TRICK_OR_TREAT_LOADED
+                weigh_start_time = time.time()
+                weigh_start_threshold = current_weight
+                current_action = Action.WEIGHT_DETECTED
 
-        if did_jump:
+        elif current_weight in SCALE_LOADED_WEIGHTS and mode == Mode.TRICK_OR_TREAT_LOADED:
+            
+            # give a little time on the scale, let the weight detected animation run
+            if (time.time() - weigh_start_time) > 2:
+                
+                if current_weight == WEIGHT_THRESHOLD.LIGHT:
+                    current_action = Action.DUMP_CANDY_LIGHT
+                elif current_weight == WEIGHT_THRESHOLD.MEDIUM:
+                    current_action = Action.DUMP_CANDY_MEDIUM
+                elif current_weight == WEIGHT_THRESHOLD.HEAVY:
+                    current_action = Action.DUMP_CANDY_HEAVY
+                
+                mode = Mode.TRICK_OR_TREAT
+                dump_candy_start_time = time.time()
+
+        elif current_weight not in SCALE_LOADED_WEIGHTS and mode == Mode.TRICK_OR_TREAT_LOADED:
+            mode = Mode.TRICK_OR_TREAT
+            current_action = Action.CLEAR
+
+        elif did_jump:
             current_action = Action.JUMP
 
         elif button_press is not None:
@@ -199,6 +228,9 @@ while True:
             lights.run_animation(LIGHT_ANIMATION.MARIO_COIN)
             sounds.play_sound(SoundEffect.LETSA_GO)
 
+        if current_action == Action.CLEAR:
+            lights.run_animation(LIGHT_ANIMATION.CLEAR)
+
         if current_action == Action.JUMP:
             lights.run_animation(LIGHT_ANIMATION.JUMP)
             sounds.play_sound(SoundEffect.MARIO_JUMP)
@@ -211,11 +243,36 @@ while True:
             lights.run_animation(LIGHT_ANIMATION.PIPE)  
             sounds.play_sound(SoundEffect.PIPE)
 
-        if current_action == Action.DUMP_CANDY:
+        if current_action == Action.DUMP_CANDY_LIGHT:
             lights.run_animation(LIGHT_ANIMATION.MARIO_COIN)  
             sounds.play_sound(SoundEffect.MARIO_COIN)
             sleep(1)
             servo.drop_shelf()
+            sleep(0.30)
+            lights.run_animation(LIGHT_ANIMATION.POWER_UP)
+            sounds.play_sound(SoundEffect.POWER_UP)  
+            sleep(1.5)
+
+        if current_action == Action.DUMP_CANDY_MEDIUM:
+            lights.run_animation(LIGHT_ANIMATION.MARIO_COIN)  
+            sounds.play_sound(SoundEffect.JUST_WHAT_I_NEEDED)
+            sleep(1.5)
+            servo.drop_shelf()
+            sleep(0.30)
+            lights.run_animation(LIGHT_ANIMATION.FREE_GUY)  
+            sounds.play_sound(SoundEffect.FREE_GUY)
+            sleep(1.5)
+
+        if current_action == Action.DUMP_CANDY_HEAVY:
+            lights.run_animation(LIGHT_ANIMATION.MARIO_COIN)  
+            sounds.play_sound(SoundEffect.MAMA_MIA)
+            sleep(0.75)
+            servo.drop_shelf()
+            sleep(0.30)
+            lights.run_animation(LIGHT_ANIMATION.STAR_POWER)  
+            sounds.play_sound(SoundEffect.STAR_POWER)
+            sleep(12.5)
+            lights.run_animation(LIGHT_ANIMATION.CLEAR)  
 
         if current_action == Action.WEIGHT_DETECTED:
             lights.run_animation(LIGHT_ANIMATION.WEIGHT_DETECTED)  
@@ -227,6 +284,7 @@ while True:
             mode = Mode.ADMIN
         
         if current_action == Action.REBOOT:
+            lights.run_animation(LIGHT_ANIMATION.FIRE_BALL)
             sounds.play_sound(SoundEffect.MARIO_DIE)
             sleep(3)
             reboot()

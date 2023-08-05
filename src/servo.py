@@ -1,8 +1,8 @@
 from adafruit_servokit import ServoKit
 from time import sleep
 
-SERVO_FLAT_ANGLE = 40
-SERVO_DROP_ANGLE = 130
+SERVO_FLAT_ANGLE = 36
+SERVO_DROP_ANGLE = 122
 
 servo_kit = ServoKit(channels=16)
 
