@@ -1,4 +1,5 @@
 from adafruit_servokit import ServoKit
+from time import sleep
 
 SERVO_FLAT_ANGLE = 40
 SERVO_DROP_ANGLE = 130
@@ -10,8 +11,10 @@ class Servo:
     def __init__(self):
         servo_kit.servo[0].angle = SERVO_FLAT_ANGLE
 
-    def reset_shelf():
+    def reset_shelf(self):
         servo_kit.servo[0].angle = SERVO_FLAT_ANGLE
 
-    def drop_shelf():
+    def drop_shelf(self):
         servo_kit.servo[0].angle = SERVO_DROP_ANGLE
+        sleep(0.75)
+        self.reset_shelf()

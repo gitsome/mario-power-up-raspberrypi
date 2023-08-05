@@ -23,6 +23,7 @@ class SoundEffect(Enum):
     FREE_GUY = SoundConfig("mario_1up.mp3", 6)
     YEAHOO = SoundConfig("yeahoo.mp3", 6)
     POWER_UP = SoundConfig("mario_power_up.mp3", 4)
+    MAMA_MIA = SoundConfig("mama_mia.mp3", 4)
 
 class Sounds:
     volume = 0.5
@@ -32,3 +33,11 @@ class Sounds:
 
     def play_sound(self, sound: SoundEffect):
         os.system(f"mpg321 -g {sound.value.volume * self.volume} /home/johnmartin/Documents/src/assets/{sound.value.file_name} &")
+
+    def volume_up(self):
+        self.volume = min(2.5, self.volume + 0.25)
+        self.play_sound(SoundEffect.FIRE_BALL)
+
+    def volume_down(self):
+        self.volume = max(0.5, self.volume - 0.25)
+        self.play_sound(SoundEffect.FIRE_BALL)

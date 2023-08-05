@@ -19,6 +19,8 @@ import board
 import neopixel
 import neopixel_spi
 
+from utils import empty_queue
+
 NUM_PIXELS = 24
 
 print(dir(board))
@@ -35,6 +37,7 @@ pulse_red = Pulse(pixels, speed=0.005, color=RED, period=0.5)
 pulse_yellow = Pulse(pixels, speed=0.01, color=YELLOW, period=1)
 pulse_white = Pulse(pixels, speed=0.05, color=WHITE, period=1)
 pulse_green = Pulse(pixels, speed=0.05, color=GREEN, period=1.5)
+pulse_purple = Pulse(pixels, speed=0.05, color=PURPLE, period=2)
 
 idle_animation = AnimationSequence(pulse_white, pulse_black, advance_interval=1, auto_clear=True)
 waiting_animation = comet_white
@@ -45,20 +48,27 @@ pipe_animation = pulse_green
 jump_animation = solid_white
 fireball_animation = pulse_red
 
+class AnimationConfig():
+    def __init__(self, animation, repeat=False):
+        self.animation = animation
+        self.repeat = repeat
+
+
 class LIGHT_ANIMATION(Enum):
     JUMP = auto()
     FIRE_BALL = auto()
     PIPE = auto()
+    MARIO_COIN = auto()
+    ADMIN = auto()
 
 LIGHT_ANIMATION_MAP = {
-    LIGHT_ANIMATION.JUMP: lambda : AnimateOnce(pulse_white),
-    LIGHT_ANIMATION.FIRE_BALL: lambda : AnimateOnce(fireball_animation),
-    LIGHT_ANIMATION.PIPE: lambda : AnimateOnce(pipe_animation)
+    LIGHT_ANIMATION.JUMP: lambda : AnimationConfig(AnimateOnce(pulse_white)),
+    LIGHT_ANIMATION.FIRE_BALL: lambda : AnimationConfig(AnimateOnce(fireball_animation)),
+    LIGHT_ANIMATION.PIPE: lambda : AnimationConfig(AnimateOnce(pipe_animation)),
+    LIGHT_ANIMATION.MARIO_COIN: lambda: AnimationConfig(AnimateOnce(coin_animation)),
+    LIGHT_ANIMATION.ADMIN: lambda: AnimationConfig(Pulse(pixels, speed=0.02, color=TEAL, period=1),  True),
 }
 
-def empty_queue(q):
-    while not q.empty():
-        q.get()
 
 def animation_loop(q: multiprocessing.Queue, logger):
 
@@ -66,20 +76,25 @@ def animation_loop(q: multiprocessing.Queue, logger):
 
     while True:
 
-        if current_light_animation is None:
+        try:
+            next_light_animation: Union[None, LIGHT_ANIMATION] = q.get_nowait()
+            empty_queue(q)
+        except:
+            next_light_animation = None
 
-            try:
-                next_light_animation: Union[None, LIGHT_ANIMATION] = q.get_nowait()
-                empty_queue(q)
-            except:
-                next_light_animation = None
+        if next_light_animation is not None:
 
-            if next_light_animation is not None:
-                current_light_animation = LIGHT_ANIMATION_MAP[next_light_animation]()
-                current_light_animation.reset()
+            if current_light_animation is not None:
+                current_light_animation.animation.reset()
+
+            current_light_animation = LIGHT_ANIMATION_MAP[next_light_animation]()
+            current_light_animation.animation.reset()
 
         if current_light_animation is not None:
-            if not current_light_animation.animate():
+
+            animate_result = current_light_animation.animation.animate()
+
+            if not current_light_animation.repeat and not animate_result:
                 current_light_animation = None
 
 
