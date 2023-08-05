@@ -1,7 +1,6 @@
 from typing import Union
 from datetime import datetime
 import multiprocessing
-import threading
 from enum import Enum, auto
 from evdev import InputDevice, categorize, ecodes
 

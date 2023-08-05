@@ -66,7 +66,7 @@ LIGHT_ANIMATION_MAP = {
     LIGHT_ANIMATION.FIRE_BALL: lambda : AnimationConfig(AnimateOnce(fireball_animation)),
     LIGHT_ANIMATION.PIPE: lambda : AnimationConfig(AnimateOnce(pipe_animation)),
     LIGHT_ANIMATION.MARIO_COIN: lambda: AnimationConfig(AnimateOnce(coin_animation)),
-    LIGHT_ANIMATION.ADMIN: lambda: AnimationConfig(Pulse(pixels, speed=0.02, color=TEAL, period=1),  True),
+    LIGHT_ANIMATION.ADMIN: lambda: AnimationConfig(Pulse(pixels, speed=0.01, color=TEAL, period=0.6),  True),
 }
 
 

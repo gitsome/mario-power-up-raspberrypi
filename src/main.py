@@ -73,10 +73,11 @@ GPIO.setmode(GPIO.BCM)
 # ============= Helper Class Instantiation ============
 
 lights = Lights(logger=logger)
-gyro = Gyro()
 sounds = Sounds()
-gyro = Gyro()
 servo = Servo()
+
+gyro_q = Queue()
+gyro = Gyro(logger=logger, queue = gyro_q)
 
 gamepad_q = Queue()
 gamepad = Gamepad(logger=logger, queue = gamepad_q)
@@ -132,17 +133,33 @@ current_action: Union[None, Action] = Action.START_UP
 
 while True:
 
+    # ========== GET GAMEPAD INPUT ===========
+
     try:
         button_press = gamepad_q.get_nowait()
         empty_queue(gamepad_q)
     except:
         button_press = None
 
+    # ========== GET GYRO INPUT ============
+
+    did_jump = False
+
+    try:
+        did_jump = gyro_q.get_nowait()
+        empty_queue(gyro_q)
+    except:
+        pass
+
+
     # ========== GET ACTIONS BASED ON MODE ONLY IF ONE IS NOT ALREADY SET ============
 
     if current_action is None:
 
-        if button_press is not None:
+        if did_jump:
+            current_action = Action.JUMP
+
+        elif button_press is not None:
 
             if mode == Mode.TRICK_OR_TREAT:
                 current_action = check_for_trick_or_treat_actions(button_press)

@@ -81,31 +81,29 @@ def get_gyro_data():
   return Az
 
 did_jump = False
-did_pipe = False
 
-def test_gyro():
+def gyro_loop(message_q, logger):
 
-  global did_jump
-  global did_pipe
-  
-  while True:
-	
-    acceleration_z = get_gyro_data()
+    global did_jump
 
-    if acceleration_z > 1.3:
-      did_jump = True
-      did_pipe = False
-    
-    if acceleration_z < 0.4:
-       did_jump = False
+    while True:
 
-    if did_jump:
-       current_color_animation = jump_animation
-       sleep(1.5)
-       current_color_animation = idle_animation
+        acceleration_z = get_gyro_data()
 
+        did_jump = acceleration_z > 1.3
+
+        if did_jump:
+            message_q.put(True)
+            sleep(1.5)
 
 class Gyro:
     
-    def __init__(self):
-        self.message_q = multiprocessing.Queue()
+    message_q: multiprocessing.Queue
+
+    def __init__ (self, queue, logger):
+      
+        self.message_q = queue
+
+        # create and start the gyro listener
+        gyro_listener_process = multiprocessing.Process(target=gyro_loop, args=(self.message_q, logger))
+        gyro_listener_process.start()
