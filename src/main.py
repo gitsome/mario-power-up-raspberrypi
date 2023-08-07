@@ -372,8 +372,11 @@ while True:
         if current_action == Action.CALIBRATE_SCALE:
             lights.run_animation(LIGHT_ANIMATION.WEIGHT_DETECTED)
             calibrate_scale()
-            lights.run_animation(LIGHT_ANIMATION.ADMIN)
+            lights.run_animation(LIGHT_ANIMATION.JUMP)
             sounds.play_sound(SoundEffect.YEAHOO)
+            sleep(1.5)
+            current_action = Action.EXIT_ADMIN
+            continue
 
         if current_action == Action.EXIT_ADMIN:
             servo.reset_shelf()
