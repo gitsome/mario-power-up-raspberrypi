@@ -46,11 +46,15 @@ class Action(Enum):
 
     JUMP = auto()
     PIPE = auto()
+    WORLD_CLEAR = auto()
+    UNDERGROUND = auto()
+    PLAY = auto()
     FIRE_BALL = auto()
     WEIGHT_DETECTED = auto()
     DUMP_CANDY_LIGHT = auto()
     DUMP_CANDY_MEDIUM = auto()
     DUMP_CANDY_HEAVY = auto()
+
 
     GO_ADMIN = auto()
     GO_TRICK_OR_TREAT_LOADED = auto()
@@ -66,6 +70,8 @@ class Action(Enum):
     CALIBRATE_SCALE = auto()
     VOLUME_UP = auto()
     VOLUME_DOWN = auto()
+    PLATE_UP = auto()
+    PLATE_DOWN = auto()
     REBOOT = auto()
     EXIT_ADMIN = auto()
 
@@ -83,13 +89,21 @@ sounds = Sounds()
 servo = Servo()
 
 gyro_q = Queue()
-gyro = Gyro(logger=logger, queue = gyro_q)
+gyro = Gyro(logger=logger, queue=gyro_q)
 
 gamepad_q = Queue()
-gamepad = Gamepad(logger=logger, queue = gamepad_q)
+gamepad = Gamepad(logger=logger, queue=gamepad_q)
 
 scale_q = Queue()
-scale = Scale(logger=logger, queue = scale_q)
+scale = Scale(logger=logger, queue=scale_q)
+
+# ============= HELPER METHODS ============
+
+def calibrate_scale():
+    # move the servo into position and calibrate the scale
+    servo.reset_shelf()
+    sleep(1)
+    scale.calibrate()
 
 
 # ============= MODE AND ACTION LOGIC ===================
@@ -106,6 +120,12 @@ def check_for_trick_or_treat_actions(buttonPress: ButtonPress) -> Union[Action, 
         return Action.DUMP_CANDY_LIGHT
     elif buttonPress.button == GamePadButton.SELECT:
         return Action.GO_ADMIN
+    elif button_press.button == GamePadButton.UP:
+        return Action.WORLD_CLEAR
+    elif button_press.button == GamePadButton.LEFT:
+        return Action.UNDERGROUND
+    elif button_press.button == GamePadButton.RIGHT:
+        return Action.PLAY
     
     return None
 
@@ -127,6 +147,10 @@ def check_admin_actions(buttonPress: ButtonPress) -> Union[Action, None]:
         return Action.CALIBRATE_SCALE
     elif buttonPress.button == GamePadButton.SELECT:
         return Action.EXIT_ADMIN
+    elif buttonPress.button == GamePadButton.LEFT:
+        return Action.PLATE_UP
+    elif buttonPress.button == GamePadButton.RIGHT:
+        return Action.PLATE_DOWN
     
     return None
 
@@ -146,6 +170,8 @@ weigh_start_threshold: WEIGHT_THRESHOLD = WEIGHT_THRESHOLD.NONE
 dump_candy_start_time:int = 0
 
 current_weight: Union[WEIGHT_THRESHOLD, None] = None
+
+calibrate_scale()
 
 while True:
 
@@ -223,7 +249,7 @@ while True:
     # ========== ACTIONS ============
 
     if current_action is not None:
-        
+
         if current_action == Action.START_UP:
             lights.run_animation(LIGHT_ANIMATION.MARIO_COIN)
             sounds.play_sound(SoundEffect.LETSA_GO)
@@ -243,11 +269,53 @@ while True:
             lights.run_animation(LIGHT_ANIMATION.PIPE)  
             sounds.play_sound(SoundEffect.PIPE)
 
+        if current_action == Action.WORLD_CLEAR:
+            lights.run_animation(LIGHT_ANIMATION.WORLD_CLEAR)
+            sounds.play_sound(SoundEffect.WORLD_CLEAR)
+            sleep(1.7)
+            lights.run_animation(LIGHT_ANIMATION.WORLD_CLEAR)
+            sleep(1.7)
+            lights.run_animation(LIGHT_ANIMATION.WORLD_CLEAR)
+            sleep(1.7)
+            lights.run_animation(LIGHT_ANIMATION.WORLD_CLEAR)
+            sleep(1.7)
+            lights.run_animation(LIGHT_ANIMATION.FIRE_BALL)  
+            sounds.play_sound(SoundEffect.FIREWORK)
+            sleep(0.5)
+            lights.run_animation(LIGHT_ANIMATION.FIRE_BALL)  
+            sounds.play_sound(SoundEffect.FIREWORK)
+            sleep(0.5)
+            lights.run_animation(LIGHT_ANIMATION.FIRE_BALL)  
+            sounds.play_sound(SoundEffect.FIREWORK)
+
+        if current_action == Action.UNDERGROUND:
+            sounds.play_sound(SoundEffect.UNDERGROUND)
+            sleep(0.5)
+            lights.run_animation(LIGHT_ANIMATION.UNDERGROUND)
+            sleep(1.5)
+            lights.run_animation(LIGHT_ANIMATION.UNDERGROUND)
+            sleep(2)
+            lights.run_animation(LIGHT_ANIMATION.UNDERGROUND)
+            sleep(2)
+            lights.run_animation(LIGHT_ANIMATION.UNDERGROUND)
+            sleep(1.5)
+            lights.run_animation(LIGHT_ANIMATION.UNDERGROUND_END)
+            sleep(4)
+            current_action = Action.CLEAR
+            continue
+
+        if current_action == Action.PLAY:
+            sounds.play_sound(SoundEffect.PLAY)
+            lights.run_animation(LIGHT_ANIMATION.PLAY)
+            sleep(12)            
+            current_action = Action.CLEAR
+            continue
+
         if current_action == Action.DUMP_CANDY_LIGHT:
             lights.run_animation(LIGHT_ANIMATION.MARIO_COIN)  
             sounds.play_sound(SoundEffect.MARIO_COIN)
             sleep(1)
-            servo.drop_shelf()
+            servo.drop_and_reset_shelf()
             sleep(0.30)
             lights.run_animation(LIGHT_ANIMATION.POWER_UP)
             sounds.play_sound(SoundEffect.POWER_UP)  
@@ -257,7 +325,7 @@ while True:
             lights.run_animation(LIGHT_ANIMATION.MARIO_COIN)  
             sounds.play_sound(SoundEffect.JUST_WHAT_I_NEEDED)
             sleep(1.5)
-            servo.drop_shelf()
+            servo.drop_and_reset_shelf()
             sleep(0.30)
             lights.run_animation(LIGHT_ANIMATION.FREE_GUY)  
             sounds.play_sound(SoundEffect.FREE_GUY)
@@ -267,7 +335,7 @@ while True:
             lights.run_animation(LIGHT_ANIMATION.MARIO_COIN)  
             sounds.play_sound(SoundEffect.MAMA_MIA)
             sleep(0.75)
-            servo.drop_shelf()
+            servo.drop_and_reset_shelf()
             sleep(0.30)
             lights.run_animation(LIGHT_ANIMATION.STAR_POWER)  
             sounds.play_sound(SoundEffect.STAR_POWER)
@@ -295,7 +363,20 @@ while True:
         if current_action == Action.VOLUME_DOWN:
             sounds.volume_down()
 
+        if current_action == Action.PLATE_UP:
+            servo.reset_shelf()
+        
+        if current_action == Action.PLATE_DOWN:
+            servo.drop_shelf()
+
+        if current_action == Action.CALIBRATE_SCALE:
+            lights.run_animation(LIGHT_ANIMATION.WEIGHT_DETECTED)
+            calibrate_scale()
+            lights.run_animation(LIGHT_ANIMATION.ADMIN)
+            sounds.play_sound(SoundEffect.YEAHOO)
+
         if current_action == Action.EXIT_ADMIN:
+            servo.reset_shelf()
             mode = Mode.TRICK_OR_TREAT
             current_action = Action.START_UP
             continue

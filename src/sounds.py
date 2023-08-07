@@ -24,6 +24,10 @@ class SoundEffect(Enum):
     YEAHOO = SoundConfig("yeahoo.mp3", 6)
     POWER_UP = SoundConfig("mario_power_up.mp3", 4)
     MAMA_MIA = SoundConfig("mama_mia.mp3", 4)
+    WORLD_CLEAR = SoundConfig("mario_world_clear.mp3", 4)
+    FIREWORK = SoundConfig("mario_firework.mp3", 16)
+    UNDERGROUND = SoundConfig("mario_underground.mp3", 18)
+    PLAY = SoundConfig("mario_play.mp3", 12)
 
 class Sounds:
     volume = 0.5

@@ -16,5 +16,8 @@ class Servo:
 
     def drop_shelf(self):
         servo_kit.servo[0].angle = SERVO_DROP_ANGLE
+
+    def drop_and_reset_shelf(self):
+        self.drop_shelf()
         sleep(0.75)
         self.reset_shelf()
