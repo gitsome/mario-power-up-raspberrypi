@@ -25,12 +25,12 @@ class SoundEffect(Enum):
     POWER_UP = SoundConfig("mario_power_up.mp3", 4)
     MAMA_MIA = SoundConfig("mama_mia.mp3", 4)
     WORLD_CLEAR = SoundConfig("mario_world_clear.mp3", 4)
-    FIREWORK = SoundConfig("mario_firework.mp3", 16)
+    FIREWORK = SoundConfig("mario_firework.mp3", 14)
     UNDERGROUND = SoundConfig("mario_underground.mp3", 18)
-    PLAY = SoundConfig("mario_play.mp3", 12)
+    PLAY = SoundConfig("mario_play.mp3", 8)
 
 class Sounds:
-    volume = 0.5
+    volume = 1.5
 
     def __init__ (self):
         self.message_q = multiprocessing.Queue()
@@ -39,7 +39,7 @@ class Sounds:
         os.system(f"mpg321 -g {sound.value.volume * self.volume} /home/johnmartin/Documents/src/assets/{sound.value.file_name} &")
 
     def volume_up(self):
-        self.volume = min(2.5, self.volume + 0.25)
+        self.volume = min(3, self.volume + 0.25)
         self.play_sound(SoundEffect.FIRE_BALL)
 
     def volume_down(self):
