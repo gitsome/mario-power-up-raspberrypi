@@ -8,6 +8,8 @@ from utils import empty_queue
 from hx711 import HX711
 
 # ========== CALIBRATION ============
+# hx = HX711(dout_pin=6, pd_sck_pin=5)
+# hx.zero()
 # input('Place weight then press Enter: ')
 # reading = hx.get_data_mean(readings = 100)
 # known_weight_grams_str = input('Tell me how many grams and press Enter: ')
@@ -15,8 +17,8 @@ from hx711 import HX711
 # calibration_ratio = reading / known_weight_grams
 # print("calibration_ratio:", calibration_ratio)
 
-# 20g: 720.2, 50g: 622.94, 100g: 659.03 ( took the average over the 3 different weights )
-CALIBARTION_RATIO = 667 
+# 20g: 720.2, 50g: 622.94, 100g: 641.8 ( took the average over the 3 different weights )
+CALIBARTION_RATIO = 740.0
 
 class CALIBRATION_MESSAGES(Enum):
     CALIBRATE = auto()
@@ -26,7 +28,7 @@ class WEIGHT_THRESHOLD(Enum):
     NONE = 0
     LIGHT = 10
     MEDIUM = 30
-    HEAVY = 80
+    HEAVY = 60
 
 # a list of the weights that are associated to the state of being "loaded"
 SCALE_LOADED_WEIGHTS = [
